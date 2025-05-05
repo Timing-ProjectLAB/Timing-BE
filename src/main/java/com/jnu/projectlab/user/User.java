@@ -4,10 +4,11 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users") // s는 빼버렸습니다.
+@Table(name = "users")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -15,24 +16,43 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private Long id; // bigserial에 맞춰 Long으로 수정(PostSQL DB에 사용되는 데이터타입)
 
-    private String username;
-    private Integer age;
-    private String career; // 오타 수정했습니다.
-    private String education;
+    @Column(name = "user_id", unique = true, nullable = false, length = 50)
+    private String userId; // 사용자 로그인 ID
 
-    @Column(name = "income_level")
-    private Integer incomeLevel;
+    @Column(nullable = false, length = 100)
+    private String password; // BCryptPasswordEncoder로 해시된 비밀번호
 
-    @Column(name = "region_id")
-    private Integer regionId;
+    @Column(name = "birth_date", nullable = false)
+    private LocalDate birthDate; // 생년월일
+
+    @Column(nullable = false)
+    private Integer gender; // 성별 (1: 남성, 0: 여성)
+
+    @Column(name = "income_bracket")
+    private Integer incomeBracket; // 소득 수준 (1-10 스케일)
+
+    @Column(name = "region_id", nullable = false)
+    private Integer regionId; // 사용자 거주 지역 ID
+
+    @Column(length = 100)
+    private String occupation; // 직업 정보
 
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    private LocalDateTime createdAt; // 생성 시간
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt; // 수정 시간
 
     @PrePersist
-    protected void onCreate() {
+    protected void onCreate() { // 시간을 실시간으로 전달받기 위해 사용
         createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() { //시간을 실시간으로 전달받기 위해 사용
+        updatedAt = LocalDateTime.now();
     }
 }
