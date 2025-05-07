@@ -31,8 +31,10 @@ dependencies {
     runtimeOnly 'com.mysql:mysql-connector-j'
     runtimeOnly 'com.h2database:h2'
     annotationProcessor 'org.projectlombok:lombok'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test' // Spring Boot 테스트 환경 구성을 위한 의존성
+    runtimeOnly 'org.postgresql:postgresql' // PostgreSQL 데이터베이스 연결을 위한 JDBC 드라이버
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher' // JUnit 테스트 실행을 위한 런처 제공
+    implementation 'me.paulschwarz:spring-dotenv:3.0.0' // .env 파일을 통한 환경변수 관리 지원 라이브러리
 }
 
 tasks.named('test') {
