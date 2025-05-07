@@ -65,6 +65,7 @@ public class User implements UserDetails { // UserDetails를 상속받아 인증
         updatedAt = LocalDateTime.now();
     }
 
+
     // UserDetails 인터페이스 구현 메서드
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

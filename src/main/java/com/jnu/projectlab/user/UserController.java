@@ -2,6 +2,7 @@ package com.jnu.projectlab.user;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -21,7 +22,7 @@ public class UserController {
 
     // 특정 사용자 조회 메서드
     @GetMapping("/{id}")
-    public ResponseEntity<UserDto> getUserById(@PathVariable Integer id) {
+    public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
         return userService.findUserById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -35,15 +36,31 @@ public class UserController {
 
     // 사용자 수정 메서드
     @PutMapping("/{id}")
-    public ResponseEntity<UserDto> updateUser(@PathVariable Integer id, @RequestBody UserDto userDto) {
+    public ResponseEntity<UserDto> updateUser(@PathVariable Long id, @RequestBody UserDto userDto) {
         userDto.setId(id);
         return ResponseEntity.ok(userService.saveUser(userDto));
     }
 
     // 사용자 삭제 메서드
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Integer id) {
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // 회원가입 엔드포인트 추가
+    @PostMapping("/auth/signup")
+    public ResponseEntity<Long> signup(@RequestBody UserDto userDto) {
+        Long userId = userService.save(userDto); // 회원가입 메서드 호출
+        return ResponseEntity.ok(userId);
+    }
+
+    // 현재 로그인한 사용자 정보 조회 메서드 추가
+    @GetMapping("/me")
+    public ResponseEntity<UserDto> getCurrentUser(@AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(401).build(); // 인증되지 않은 경우
+        }
+        return ResponseEntity.ok(userService.findUserById(user.getId()).orElseThrow());
     }
 }
