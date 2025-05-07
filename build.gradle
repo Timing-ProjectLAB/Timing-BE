@@ -33,6 +33,13 @@ dependencies {
     runtimeOnly 'org.postgresql:postgresql' // PostgreSQL 데이터베이스 연결을 위한 JDBC 드라이버
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher' // JUnit 테스트 실행을 위한 런처 제공
     implementation 'me.paulschwarz:spring-dotenv:3.0.0' // .env 파일을 통한 환경변수 관리 지원 라이브러리
+
+    // 스프링 시큐리티를 사용하기 위한 스타터 추가
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    // 타임리프에서 스프링 시큐리티를 사용하기 위한 의존성 추가
+    implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity6'
+    // 스프링 시큐리티를 테스트하기 위한 의존성 추가
+    testImplementation 'org.springframework.security:spring-security-test'
 }
 
 tasks.named('test') {
