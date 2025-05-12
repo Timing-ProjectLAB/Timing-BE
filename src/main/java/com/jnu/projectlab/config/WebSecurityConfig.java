@@ -1,5 +1,6 @@
 package com.jnu.projectlab.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import com.jnu.projectlab.user.UserDetailService;
 import org.springframework.context.annotation.Bean;
@@ -32,12 +33,17 @@ public class WebSecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/api/user/auth/signup", "/api/auth/**").permitAll()
+                        .requestMatchers("/auth/signup", "/auth/login", "/health").permitAll() // health부분 추가
                         .anyRequest().authenticated()
                 )
                 .httpBasic(Customizer.withDefaults()) // HTTP Basic 인증
                 .logout(logout -> logout
-                        .logoutSuccessUrl("/login")
+                        .logoutSuccessUrl("/auth/login")
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"message\":\"Success Logout\"}");
+                            response.setStatus(HttpServletResponse.SC_OK);
+                        })
                         .invalidateHttpSession(true)
                 )
                 .csrf(csrf -> csrf.disable())
