@@ -43,8 +43,19 @@ public class UserService {
     }
 
 
+    // 사용자 ID 존재 여부 확인 메서드 추가
+    public boolean existsByUserId(String userId) {
+        return userRepository.existsByUserId(userId);
+    }
+
     // 회원가입용 메서드 추가 (스프링 시큐리티)
     public Long save(UserDto userDto) {
+
+        // 아이디 중복 검사
+        if (existsByUserId(userDto.getUserId())) {
+            throw new DuplicatedUserException("이미 존재하는 아이디입니다.");
+        }
+
         // 비밀번호 암호화
         userDto.setPassword(passwordEncoder.encode(userDto.getPassword()));
 
