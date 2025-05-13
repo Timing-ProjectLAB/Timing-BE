@@ -48,13 +48,6 @@ public class UserController {
         return ResponseEntity.noContent().build();
     }
 
-    // 회원가입 엔드포인트 추가
-    @PostMapping("/auth/signup")
-    public ResponseEntity<Long> signup(@RequestBody UserDto userDto) {
-        Long userId = userService.save(userDto); // 회원가입 메서드 호출
-        return ResponseEntity.ok(userId);
-    }
-
     // 현재 로그인한 사용자 정보 조회 메서드 추가
     @GetMapping("/me")
     public ResponseEntity<UserDto> getCurrentUser(@AuthenticationPrincipal User user) {
