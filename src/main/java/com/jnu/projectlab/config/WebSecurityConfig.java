@@ -1,5 +1,6 @@
 package com.jnu.projectlab.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import com.jnu.projectlab.user.UserDetailService;
 import org.springframework.context.annotation.Bean;
@@ -13,6 +14,11 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
 
 @RequiredArgsConstructor
 @Configuration
@@ -22,7 +28,7 @@ public class WebSecurityConfig {
 
     // 스프링 시큐리티 기능 비활성화 (정적 리소스에 대해)
     @Bean
-    public WebSecurityCustomizer configure() {
+    public WebSecurityCustomizer configure() {q
         return (web) -> web.ignoring()
                 .requestMatchers("/static/**"); // static 리소스는 시큐리티 적용 제외
     }
@@ -31,13 +37,19 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
+                .cors(Customizer.withDefaults())  // cors 추가
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/api/user/auth/signup", "/api/auth/**").permitAll()
+                        .requestMatchers("/auth/signup", "/auth/login", "/health").permitAll() // health부분 추가
                         .anyRequest().authenticated()
                 )
                 .httpBasic(Customizer.withDefaults()) // HTTP Basic 인증
                 .logout(logout -> logout
-                        .logoutSuccessUrl("/login")
+                        .logoutSuccessUrl("/auth/login")
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"message\":\"Success Logout\"}");
+                            response.setStatus(HttpServletResponse.SC_OK);
+                        })
                         .invalidateHttpSession(true)
                 )
                 .csrf(csrf -> csrf.disable())
@@ -45,6 +57,19 @@ public class WebSecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 )
                 .build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // React(허용 도메인 주소)
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 
     // 인증 관리자 관련 설정 (최신 버전 방식)
