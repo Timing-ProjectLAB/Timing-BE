@@ -28,7 +28,7 @@ public class WebSecurityConfig {
 
     // 스프링 시큐리티 기능 비활성화 (정적 리소스에 대해)
     @Bean
-    public WebSecurityCustomizer configure() {q
+    public WebSecurityCustomizer configure() {
         return (web) -> web.ignoring()
                 .requestMatchers("/static/**"); // static 리소스는 시큐리티 적용 제외
     }
