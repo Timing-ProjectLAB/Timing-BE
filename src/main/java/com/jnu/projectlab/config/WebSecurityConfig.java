@@ -37,12 +37,12 @@ public class WebSecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
-                .cors(Customizer.withDefaults())  // cors 추가
+                .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/signup", "/auth/login", "/health").permitAll() // health부분 추가
+                        .requestMatchers("/auth/signup", "/auth/login", "/health").permitAll()
                         .anyRequest().authenticated()
                 )
-                .httpBasic(Customizer.withDefaults()) // HTTP Basic 인증
+                .httpBasic(Customizer.withDefaults())
                 .logout(logout -> logout
                         .logoutSuccessUrl("/auth/login")
                         .logoutSuccessHandler((request, response, authentication) -> {
@@ -62,7 +62,7 @@ public class WebSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // React(허용 도메인 주소)
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:8081")); // React, ReactNative(허용 도메인 주소)
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
