@@ -52,7 +52,7 @@ public class WebSecurityConfig {
                 // 세션 인증으로 변경
                 .csrf(csrf -> csrf.disable())  // CSRF 보호 비활성화
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.ALWAYS)  // 항상 세션 생성
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)  // 항상 세션 생성
                 )
 
                 // 로그아웃할 경우 세션 삭제
