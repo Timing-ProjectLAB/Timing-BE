@@ -1,7 +1,9 @@
-package com.jnu.projectlab.config;
+package com.jnu.projectlab.auth;
 
+import com.jnu.projectlab.user.DuplicatedUserException;
 import com.jnu.projectlab.user.UserDto;
 import com.jnu.projectlab.user.UserService;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/auth")
@@ -57,12 +60,42 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<?> signup(@RequestBody UserDto userDto) {
-        Long userId = userService.save(userDto);
+    public ResponseEntity<?> signup(@RequestBody UserDto userDto, HttpServletRequest request) {
+        try {
+            
+            // 1. 원본 비밀번호 저장
+            String rawPassword = userDto.getPassword();
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("message", "회원가입이 완료되었으며 로그인되었습니다.");
-        response.put("userId", userId);
-        return ResponseEntity.ok(response);
+            // 2. 회원가입 처리
+            Long userId = userService.save(userDto);
+
+            // 3. 자동 로그인을 위한 인증 처리
+            Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                    userDto.getUserId(),
+                    rawPassword
+                )
+            );
+            
+            // 4. SecurityContext에 인증 정보 저장
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            // 5. 세션 생성 및 저장
+            HttpSession session = request.getSession(true);  // 새 세션 생성
+            session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext()); // 시큐리티 컨텍스트를 세션에 저장
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "회원가입이 완료되었으며 로그인되었습니다.");
+            response.put("userId", userId);
+            return ResponseEntity.ok(response);
+            
+        } catch (DuplicatedUserException e) {
+            throw e;  // GlobalExceptionHandler로 위임
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new HashMap<String, String>() {{ 
+                    put("message", "회원가입은 완료되었으나 자동 로그인 처리 중 오류가 발생했습니다.");
+                }});
+        }
     }
 }
