@@ -42,19 +42,30 @@ public class WebSecurityConfig {
                         .requestMatchers("/auth/signup", "/auth/login", "/health").permitAll()
                         .anyRequest().authenticated()
                 )
-                .httpBasic(Customizer.withDefaults())
+
+                // 세션 인증으로 변경
+                .csrf(csrf -> csrf.disable())  // CSRF 보호 비활성화
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.ALWAYS)  // 항상 세션 생성
+                )
+                // 로그아웃할 경우 세션 삭제
                 .logout(logout -> logout
-                        .logoutSuccessUrl("/auth/login")
+                        .logoutUrl("/auth/logout")
                         .logoutSuccessHandler((request, response, authentication) -> {
                             response.setContentType("application/json");
-                            response.getWriter().write("{\"message\":\"Success Logout\"}");
+                            response.getWriter().write("{\"message\":\"Success Logout.\"}");
                             response.setStatus(HttpServletResponse.SC_OK);
                         })
                         .invalidateHttpSession(true)
+                        .deleteCookies("SESSIONID")
                 )
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                // 정보가 다를경우 예외처리(회원가입 등)
+                .exceptionHandling(handling -> handling
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setContentType("application/json");
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.getWriter().write("{\"message\":\"Unauthorized\"}");
+                        })
                 )
                 .build();
     }
