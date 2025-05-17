@@ -1,4 +1,4 @@
-package com.jnu.projectlab.config;
+package com.jnu.projectlab.auth;
 
 import lombok.Getter;
 import lombok.Setter;
