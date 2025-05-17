@@ -35,7 +35,7 @@ public class WebSecurityConfig {
 
     /**
      * 스프링 시큐리티 필터 체인 구성
-     * 
+     *
      * @param http HttpSecurity 객체
      * @return SecurityFilterChain 보안 필터 체인
      * @throws Exception 보안 구성 중 발생할 수 있는 예외
