@@ -33,28 +33,48 @@ public class WebSecurityConfig {
                 .requestMatchers("/static/**"); // static 리소스는 시큐리티 적용 제외
     }
 
-    // 특정 HTTP 요청에 대한 웹 기반 보안 구성
+    /**
+     * 스프링 시큐리티 필터 체인 구성
+     *
+     * @param http HttpSecurity 객체
+     * @return SecurityFilterChain 보안 필터 체인
+     * @throws Exception 보안 구성 중 발생할 수 있는 예외
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
-                .cors(Customizer.withDefaults())
+                .cors(Customizer.withDefaults())  // CORS 설정 활성화
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/signup", "/auth/login", "/health").permitAll()
-                        .anyRequest().authenticated()
+                        .requestMatchers("/auth/signup", "/auth/login", "/health").permitAll()  // 인증 없이 접근 가능한 엔드포인트
+                        .anyRequest().authenticated()  // 그 외 모든 요청은 인증 필요
                 )
-                .httpBasic(Customizer.withDefaults())
+
+                // 세션 인증으로 변경
+                .csrf(csrf -> csrf.disable())  // CSRF 보호 비활성화
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)  // 항상 세션 생성
+                )
+
+
+                // 로그아웃할 경우 세션 삭제
                 .logout(logout -> logout
-                        .logoutSuccessUrl("/auth/login")
+                        .logoutUrl("/auth/logout")
                         .logoutSuccessHandler((request, response, authentication) -> {
                             response.setContentType("application/json");
-                            response.getWriter().write("{\"message\":\"Success Logout\"}");
+                            response.getWriter().write("{\"message\":\"Success Logout.\"}");
                             response.setStatus(HttpServletResponse.SC_OK);
                         })
                         .invalidateHttpSession(true)
+                        .deleteCookies("SESSIONID")
                 )
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+
+                // 정보가 다를경우 예외처리(회원가입 등)
+                .exceptionHandling(handling -> handling
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setContentType("application/json");
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.getWriter().write("{\"message\":\"Unauthorized\"}");
+                        })
                 )
                 .build();
     }
