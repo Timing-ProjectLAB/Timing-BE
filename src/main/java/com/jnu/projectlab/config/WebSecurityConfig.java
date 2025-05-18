@@ -55,6 +55,7 @@ public class WebSecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)  // 항상 세션 생성
                 )
 
+
                 // 로그아웃할 경우 세션 삭제
                 .logout(logout -> logout
                         .logoutUrl("/auth/logout")
@@ -66,6 +67,7 @@ public class WebSecurityConfig {
                         .invalidateHttpSession(true)
                         .deleteCookies("SESSIONID")
                 )
+
                 // 정보가 다를경우 예외처리(회원가입 등)
                 .exceptionHandling(handling -> handling
                         .authenticationEntryPoint((request, response, authException) -> {
