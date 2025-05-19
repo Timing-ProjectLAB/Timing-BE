@@ -18,6 +18,8 @@ import java.util.HashMap;
 import java.util.Map;
 import jakarta.servlet.http.HttpServletRequest;
 
+
+
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -35,7 +37,7 @@ public class AuthController {
      * @return ResponseEntity<?> 로그인 성공 시 성공 메시지, 실패 시 401 Unauthorized
      */
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest, HttpServletRequest request) {  // HttpServletRequest 추가
         try {
             // 인증 매니저를 통해 사용자 인증 시도
             Authentication authentication = authenticationManager.authenticate(
@@ -47,6 +49,10 @@ public class AuthController {
 
             // 인증 성공 시 SecurityContext에 인증 정보 저장
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            // 세션 생성 및 저장 추가
+            HttpSession session = request.getSession(true);
+            session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
 
             // 성공 응답 생성
             Map<String, Object> response = new HashMap<>();
