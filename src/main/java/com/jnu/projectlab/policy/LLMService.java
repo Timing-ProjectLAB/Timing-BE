@@ -3,6 +3,7 @@ package com.jnu.projectlab.policy;
 import com.jnu.projectlab.policy.dto.LLMAnswerResponse;
 import com.jnu.projectlab.policy.dto.LLMQuestionRequest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -18,7 +19,8 @@ import java.util.Map;
 @Service
 public class LLMService {
     private final RestTemplate restTemplate;
-    private final String LLM_SERVER_URL = "http://llm.timing.n-e.kr:8000/llm/answers";
+    @Value("${llm.server.url}")  // application.properties의 값을 가져옴
+    private String LLM_SERVER_URL;
 
     @Autowired
     public LLMService(RestTemplate restTemplate) {
