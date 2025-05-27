@@ -57,6 +57,7 @@ public class AuthController {
             // 성공 응답 생성
             Map<String, Object> response = new HashMap<>();
             response.put("message", "로그인이 성공적으로 완료되었습니다.");
+            response.put("user_id", loginRequest.getUserId());  // user_id로 키 이름 변경
             return ResponseEntity.ok(response);
 
         } catch (AuthenticationException e) {
@@ -92,7 +93,7 @@ public class AuthController {
 
             Map<String, Object> response = new HashMap<>();
             response.put("message", "회원가입이 완료되었으며 로그인되었습니다.");
-            response.put("userId", userId);
+            response.put("user_id", userDto.getUserId());  // userId -> user_id로 변경
             return ResponseEntity.ok(response);
             
         } catch (DuplicatedUserException e) {
