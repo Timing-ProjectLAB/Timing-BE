@@ -50,7 +50,6 @@ public class UserService {
 
     // 회원가입용 메서드 추가 (스프링 시큐리티)
     public Long save(UserDto userDto) {
-
         // 아이디 중복 검사
         if (existsByUserId(userDto.getUserId())) {
             throw new DuplicatedUserException("이미 존재하는 아이디입니다.");
