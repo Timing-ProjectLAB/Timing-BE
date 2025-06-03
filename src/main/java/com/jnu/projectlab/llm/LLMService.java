@@ -1,7 +1,7 @@
-package com.jnu.projectlab.policy;
+package com.jnu.projectlab.llm;
 
-import com.jnu.projectlab.policy.dto.LLMAnswerResponse;
-import com.jnu.projectlab.policy.dto.LLMQuestionRequest;
+import com.jnu.projectlab.llm.dto.LLMAnswerResponse;
+import com.jnu.projectlab.llm.dto.LLMQuestionRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;

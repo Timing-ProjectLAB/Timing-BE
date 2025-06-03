@@ -1,4 +1,4 @@
-package com.jnu.projectlab.policy.dto;
+package com.jnu.projectlab.llm.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
