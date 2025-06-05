@@ -1,5 +1,6 @@
 package com.jnu.projectlab.policy.entity;
 
+import com.jnu.projectlab.category.entity.Category;
 import com.jnu.projectlab.policy.entity.policyCategory.PolicyCategoryId;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
