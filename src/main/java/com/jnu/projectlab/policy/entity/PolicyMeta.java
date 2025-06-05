@@ -52,6 +52,14 @@ public class PolicyMeta {
     @Column(name = "provider_group_cd")
     private String providerGroupCd; // 제공기관그룹코드
 
+    @JsonProperty("aplyPrdSeCd")
+    @Column(name = "application_period_cd")
+    private String applicationPeriodCd; // 신청기간구분코드
+
+    @JsonProperty("bizPrdSeCd")
+    @Column(name = "business_period_cd")
+    private String businessPeriodCd; // 사업기간구분코드
+
     // Policy와의 관계
     @OneToOne
     @JoinColumn(name = "policy_id", insertable = false, updatable = false)
