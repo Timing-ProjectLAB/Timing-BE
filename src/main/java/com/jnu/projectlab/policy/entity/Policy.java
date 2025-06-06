@@ -30,43 +30,43 @@ public class Policy {
     private String policyId; // 정책번호
 
     @JsonProperty("plcyNm")
-    @Column(name = "name")
+    @Column(name = "name", length = 500)
     private String name; // 정책명
 
     @JsonProperty("plcyExplnCn")
-    @Column(name = "description", columnDefinition = "TEXT")
+    @Column(name = "description", length = 5000)
     private String description; // 정책설명내용
 
     @JsonProperty("plcySprtCn")
-    @Column(name = "support_content", columnDefinition = "TEXT")
+    @Column(name = "support_content", length = 5000)
     private String supportContent; // 정책지원내용
 
     @JsonProperty("plcyAplyMthdCn")
-    @Column(name = "application_method", columnDefinition = "TEXT")
+    @Column(name = "application_method", length = 2000)
     private String applicationMethod; // 신청방법
 
     @JsonProperty("srngMthdCn")
-    @Column(name = "review_method", columnDefinition = "TEXT")
+    @Column(name = "review_method", length = 2000)
     private String reviewMethod; // 심사방법
 
     @JsonProperty("sbmsnDcmntCn")
-    @Column(name = "submission_docs", columnDefinition = "TEXT")
+    @Column(name = "submission_docs", length = 3000)
     private String submissionDocs; // 제출서류내용
 
     @JsonProperty("etcMttrCn")
-    @Column(name = "extra_info", columnDefinition = "TEXT")
+    @Column(name = "extra_info", length = 3000)
     private String extraInfo; // 기타사항내용
 
     @JsonProperty("refUrlAddr1")
-    @Column(name = "reference_url1")
+    @Column(name = "reference_url1", length = 1000)
     private String referenceUrl1; // 참고URL1
 
     @JsonProperty("refUrlAddr2")
-    @Column(name = "reference_url2")
+    @Column(name = "reference_url2", length = 1000)
     private String referenceUrl2; // 참고URL2
 
     @JsonProperty("aplyUrlAddr")
-    @Column(name = "application_url")
+    @Column(name = "application_url", length = 1000)
     private String applicationUrl; // 신청URL
 
     @JsonProperty("sprtSclCnt")
@@ -82,7 +82,7 @@ public class Policy {
     private Boolean supportFcfs; // 선착순지원여부
 
     @JsonProperty("aplyYmd")
-    @Column(name = "application_period")
+    @Column(name = "application_period", length = 500)
     private String applicationPeriod; // 신청기간
 
     @JsonProperty("bizPrdBgngYmd")
@@ -94,7 +94,7 @@ public class Policy {
     private LocalDate businessEndDate; // 사업종료일
 
     @JsonProperty("bizPrdEtcCn")
-    @Column(name = "business_period_note", columnDefinition = "TEXT")
+    @Column(name = "business_period_note", length = 1000)
     private String businessPeriodNote; // 사업기간기타내용
 
     @JsonProperty("inqCnt")
