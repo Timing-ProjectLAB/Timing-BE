@@ -84,4 +84,5 @@ public class PolicyCondition {
     @OneToOne
     @JoinColumn(name = "policy_id", insertable = false, updatable = false)
     private Policy policy;
+
 }
