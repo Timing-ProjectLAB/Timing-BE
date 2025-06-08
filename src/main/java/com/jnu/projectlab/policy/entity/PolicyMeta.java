@@ -59,9 +59,4 @@ public class PolicyMeta {
     @JsonProperty("bizPrdSeCd")
     @Column(name = "business_period_cd")
     private String businessPeriodCd; // 사업기간구분코드
-
-    // Policy와의 관계
-    @OneToOne
-    @JoinColumn(name = "policy_id", insertable = false, updatable = false)
-    private Policy policy;
 }
