@@ -110,4 +110,7 @@ public class Policy {
     @UpdateTimestamp
     @Column(name = "last_modified_at")
     private LocalDateTime lastModifiedAt; // 최종수정일시
+
+    @Column(name = "oper_inst_cd")
+    private String operInstCd; // 운영기관코드 (Organization의 PK와 매핑되는 외래키 역할)
 }
