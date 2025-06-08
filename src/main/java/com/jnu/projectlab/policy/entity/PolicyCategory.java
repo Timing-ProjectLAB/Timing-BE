@@ -29,14 +29,4 @@ public class PolicyCategory {
     @Id
     @Column(name = "category_id")
     private Integer categoryId; // 카테고리번호
-
-    // Policy와의 관계
-    @ManyToOne
-    @JoinColumn(name = "policy_id", insertable = false, updatable = false)
-    private Policy policy;
-
-    // Category와의 관계
-    @ManyToOne
-    @JoinColumn(name = "category_id", insertable = false, updatable = false)
-    private Category category;
 }

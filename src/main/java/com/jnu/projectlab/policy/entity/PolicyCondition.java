@@ -53,7 +53,7 @@ public class PolicyCondition {
     private Integer incomeMax; // 소득최대금액
 
     @JsonProperty("earnEtcCn")
-    @Column(name = "income_note", columnDefinition = "TEXT")
+    @Column(name = "income_note", length = 1000)
     private String incomeNote; // 소득기타내용
 
     @JsonProperty("schoolCd")
@@ -73,15 +73,10 @@ public class PolicyCondition {
     private String specialConditionCd; // 특화요건코드
 
     @JsonProperty("addAplyQlfcCndCn")
-    @Column(name = "additional_condition", columnDefinition = "TEXT")
+    @Column(name = "additional_condition", length = 2000)
     private String additionalCondition; // 추가신청조건
 
     @JsonProperty("ptcpPrpTrgtCn")
-    @Column(name = "participant_target", columnDefinition = "TEXT")
+    @Column(name = "participant_target", length = 2000)
     private String participantTarget; // 참여제안대상
-
-    // Policy와의 관계
-    @OneToOne
-    @JoinColumn(name = "policy_id", insertable = false, updatable = false)
-    private Policy policy;
 }
