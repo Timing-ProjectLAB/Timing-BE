@@ -66,7 +66,7 @@ public class PolicyDataLoadService {
         try {
             // 1. JSON 파일 읽기
             log.info("정책 데이터 적재 시작");
-            String json = Files.readString(Paths.get("data/policy_data.json"));
+            String json = Files.readString(Paths.get("data/all_policy_data.json"));
             List<PolicyDataDto> policyList = objectMapper.readValue(json, new TypeReference<List<PolicyDataDto>>() {});
             List<PolicyDataDto> sample = policyList.subList(0, Math.min(10, policyList.size()));
             policyList = sample; // 원본을 샘플로 교체
