@@ -23,4 +23,9 @@ public interface PolicyRepository extends JpaRepository<Policy, String> {
      */
     @Query("SELECT p FROM Policy p WHERE p.policyId IN :policyIds ORDER BY p.inquiryCount DESC")
     List<Policy> findByPolicyIdInOrderByInquiryCountDesc(@Param("policyIds") List<String> policyIds);
+
+    /**
+     * 조회수 기준 상위 3개 정책 조회 (인기정책용)
+     */
+    List<Policy> findTop3ByOrderByInquiryCountDesc();
 }
