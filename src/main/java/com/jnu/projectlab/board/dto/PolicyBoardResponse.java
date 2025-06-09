@@ -14,4 +14,5 @@ public class PolicyBoardResponse {
     private String userId;
     private int totalCount;
     private List<PolicyBoardItem> policies;
+    private String filterCategory; // 필터 카테고리 (nullable)
 }
