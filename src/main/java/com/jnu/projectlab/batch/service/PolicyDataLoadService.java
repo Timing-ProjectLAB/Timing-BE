@@ -26,6 +26,7 @@ import org.springframework.util.StringUtils;
 import com.jnu.projectlab.category.service.CategoryService;
 
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
@@ -66,7 +67,9 @@ public class PolicyDataLoadService {
         try {
             // 1. JSON 파일 읽기
             log.info("정책 데이터 적재 시작");
-            String json = Files.readString(Paths.get("data/all_policy_data.json"));
+            String basePath = System.getProperty("user.dir"); // 현재 실행 디렉토리
+            Path filePath = Paths.get(basePath, "data", "all_policy_data.json");
+            String json = Files.readString(filePath);
             List<PolicyDataDto> policyList = objectMapper.readValue(json, new TypeReference<List<PolicyDataDto>>() {});
             List<PolicyDataDto> sample = policyList.subList(0, Math.min(10, policyList.size()));
             policyList = sample; // 원본을 샘플로 교체
