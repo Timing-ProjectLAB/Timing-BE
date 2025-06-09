@@ -9,6 +9,11 @@ import com.jnu.projectlab.common.repository.PolicyKeywordRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.jnu.projectlab.policy.repository.PolicyCategoryRepository;
+import com.jnu.projectlab.category.repository.CategoryGroupRepository;
+import com.jnu.projectlab.category.entity.CategoryGroup;
+import lombok.extern.slf4j.Slf4j;
+import com.jnu.projectlab.user.UserRepository;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -19,10 +24,14 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class PolicyBoardService {
 
     private final PolicyRepository policyRepository;
     private final PolicyKeywordRepository policyKeywordRepository;
+    private final PolicyCategoryRepository policyCategoryRepository;
+    private final CategoryGroupRepository categoryGroupRepository;
+    private final UserRepository userRepository;
 
     /**
      * 사용자별 전체 정책 게시판 데이터 조회
@@ -32,18 +41,23 @@ public class PolicyBoardService {
      * @return PolicyBoardResponse 전체 정책 게시판 응답 데이터
      */
     public PolicyBoardResponse getAllPoliciesForBoard(String userId) {
-        // 1. 전체 정책 개수 조회 (API 명세서의 totalCount)
+        // 🆕 1. 사용자 존재 여부 확인 (404 처리)
+        if (!userRepository.existsByUserId(userId)) {
+            throw new IllegalArgumentException("존재하지 않는 사용자: " + userId);
+        }
+        
+        // 2. 전체 정책 개수 조회 (API 명세서의 totalCount)
         long totalCount = policyRepository.count();
 
-        // 2. 전체 정책 데이터 조회
+        // 3. 전체 정책 데이터 조회
         List<Policy> allPolicies = policyRepository.findAll();
 
-        // 3. 각 정책을 게시판 아이템으로 변환
+        // 4. 각 정책을 게시판 아이템으로 변환
         List<PolicyBoardItem> boardItems = allPolicies.stream()
                 .map(this::convertToBoardItem)  // 개별 정책 → 게시판 아이템 변환
                 .collect(Collectors.toList());
 
-        // 4. 최종 응답 데이터 구성
+        // 5. 최종 응답 데이터 구성
         return PolicyBoardResponse.builder()
                 .userId(userId)
                 .totalCount((int) totalCount)
@@ -122,7 +136,7 @@ public class PolicyBoardService {
             }
             
             // 상시 모집 등의 경우
-            if (applicationPeriod.contains(" ")) {
+            if (applicationPeriod.contains("상시")) {
                 return "상시";
             }
             
@@ -160,6 +174,74 @@ public class PolicyBoardService {
         } catch (Exception e) {
             // 조회 실패 시 빈 배열 반환
             return List.of();
+        }
+    }
+
+    /**
+     * 카테고리별 필터링된 정책 게시판 조회
+     * 
+     * @param userId 요청한 사용자 ID 
+     * @param categoryName 필터링할 카테고리명 (예: "복지문화", "취업지원")
+     * @return PolicyBoardResponse 필터링된 정책 목록
+     * @throws IllegalArgumentException 존재하지 않는 사용자인 경우
+     */
+    public PolicyBoardResponse getPolicyBoardByCategory(String userId, String categoryName) {
+        log.info("카테고리 필터링 요청 - userId: {}, category: {}", userId, categoryName);
+        
+        try {
+            // 1. 사용자 존재 여부 검증 (404 에러를 위한 체크)
+            if (!userRepository.existsByUserId(userId)) {
+                throw new IllegalArgumentException("존재하지 않는 사용자: " + userId);
+            }
+            
+            // 2. 카테고리 그룹 조회 (없어도 에러 대신 빈 결과)
+            CategoryGroup categoryGroup = categoryGroupRepository.findByName(categoryName)
+                    .orElse(null);
+            
+            // 3. 존재하지 않는 카테고리 → 빈 결과 반환
+            if (categoryGroup == null) {
+                log.debug("존재하지 않는 카테고리: {}", categoryName);
+                return PolicyBoardResponse.builder()
+                        .userId(userId)
+                        .filterCategory(categoryName)  // 필터링된 카테고리 정보
+                        .totalCount(0)
+                        .policies(List.of())
+                        .build();
+            }
+            
+            // 4. 카테고리에 속한 정책 ID 수집
+            List<String> policyIds = policyCategoryRepository.findPolicyIdsByCategoryGroupId(categoryGroup.getId());
+            
+            // 5. 정책이 없는 경우 빈 결과
+            if (policyIds.isEmpty()) {
+                return PolicyBoardResponse.builder()
+                        .userId(userId)
+                        .filterCategory(categoryName)
+                        .totalCount(0)
+                        .policies(List.of())
+                        .build();
+            }
+            
+            // 6. 인기순(조회수) 정렬로 정책 조회
+            List<Policy> policies = policyRepository.findByPolicyIdInOrderByInquiryCountDesc(policyIds);
+            
+            // 7. DTO 변환 및 응답 구성
+            List<PolicyBoardItem> boardItems = policies.stream()
+                    .map(this::convertToBoardItem)
+                    .collect(Collectors.toList());
+            
+            return PolicyBoardResponse.builder()
+                    .userId(userId)
+                    .filterCategory(categoryName)
+                    .totalCount(boardItems.size())
+                    .policies(boardItems)
+                    .build();
+                    
+        } catch (IllegalArgumentException e) {
+            throw e;  // Controller에서 404 처리
+        } catch (Exception e) {
+            log.error("카테고리 필터링 중 오류 발생", e);
+            throw new RuntimeException("정책 조회 중 오류가 발생했습니다.", e);
         }
     }
 }
