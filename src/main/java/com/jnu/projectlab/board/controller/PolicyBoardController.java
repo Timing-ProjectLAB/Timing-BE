@@ -1,6 +1,7 @@
 package com.jnu.projectlab.board.controller;
 
 import com.jnu.projectlab.board.dto.PolicyBoardResponse;
+import com.jnu.projectlab.board.dto.PolicyMainResponse;
 import com.jnu.projectlab.board.service.PolicyBoardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -78,5 +79,16 @@ public class PolicyBoardController {
             // 🆕 시스템 오류는 500으로 처리
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    /**
+     * 메인페이지 정책 조회 API
+     * 인기정책 3개 + 맞춤정책 3개
+     */
+    @GetMapping("/board/main")
+    public ResponseEntity<PolicyMainResponse> getMainPage() {
+
+        PolicyMainResponse response = policyBoardService.getMainPagePolicies();
+        return ResponseEntity.ok(response);
     }
 }
