@@ -80,10 +80,23 @@ public class PolicyBoardService {
     private PolicyBoardItem convertToBoardItem(Policy policy) {
         return PolicyBoardItem.builder()
                 .policyName(policy.getName())  // 정책명: Policy.name 그대로 사용
-                .supportSummary(extractSupportSummary(policy.getSupportContent()))  // 보충내용: 첫 번째 항목만
+                .supportSummary(
+                    removeSpecialPrefix(extractSupportSummary(policy.getSupportContent()))
+                )
                 .applicationDeadline(extractApplicationDeadline(policy.getApplicationPeriod()))  // 마감일자: 종료일만 추출
                 .keywords(getKeywords(policy.getPolicyId()))  // 키워드: PolicyKeyword 테이블에서 조회
                 .build();
+    }
+
+    /**
+     * 특수문자 제거 함수 추가
+     *
+     * @param text 입력 텍스트
+     * @return 특수문자가 제거된 텍스트
+     */
+    private String removeSpecialPrefix(String text) {
+        if (text == null) return null;
+        return text.replaceAll("^[^가-힣a-zA-Z0-9\\(\\)\\[\\]\\{\\}]+", "");
     }
 
     /**
@@ -220,7 +233,9 @@ public class PolicyBoardService {
     private PolicyMainItem convertToMainItem(Policy policy) {
         return PolicyMainItem.builder()
                 .policyName(policy.getName())
-                .supportSummary(extractSupportSummary(policy.getSupportContent()))  // 💡 기존 메서드 재사용!
+                .supportSummary(
+                        removeSpecialPrefix(extractSupportSummary(policy.getSupportContent()))
+                )
                 .applicationDeadline(extractApplicationDeadline(policy.getApplicationPeriod()))  // 💡 기존 메서드 재사용!
                 .inquiryCount(policy.getInquiryCount())
                 .build();
