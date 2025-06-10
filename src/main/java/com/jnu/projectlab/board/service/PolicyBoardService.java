@@ -2,6 +2,8 @@ package com.jnu.projectlab.board.service;
 
 import com.jnu.projectlab.board.dto.PolicyBoardResponse;
 import com.jnu.projectlab.board.dto.PolicyBoardItem;
+import com.jnu.projectlab.board.dto.PolicyMainItem;
+import com.jnu.projectlab.board.dto.PolicyMainResponse;
 import com.jnu.projectlab.policy.entity.Policy;
 import com.jnu.projectlab.policy.repository.PolicyRepository;
 import com.jnu.projectlab.common.entity.PolicyKeyword;
@@ -18,6 +20,7 @@ import com.jnu.projectlab.user.UserRepository;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -175,6 +178,44 @@ public class PolicyBoardService {
             // 조회 실패 시 빈 배열 반환
             return List.of();
         }
+    }
+
+    /**
+     * 메인페이지 정책 데이터 조회 (인기정책 3개 + 맞춤정책 3개)
+     */
+    public PolicyMainResponse getMainPagePolicies() {
+
+        // 1. 인기정책 - Repository에서 Top 3 조회
+        List<Policy> popularPolicies = policyRepository.findTop3ByOrderByInquiryCountDesc();
+        List<PolicyMainItem> popularItems = popularPolicies.stream()
+                .map(this::convertToMainItem)  // 🔄 기존 패턴 재사용
+                .collect(Collectors.toList());
+
+        // 2. 맞춤정책 - 기존 findAll() 재사용 + 랜덤 선택
+        List<Policy> allPolicies = policyRepository.findAll();  // 💡 기존 메서드 재사용!
+        Collections.shuffle(allPolicies);  // 랜덤 섞기
+        List<Policy> customPolicies = allPolicies.subList(0, Math.min(3, allPolicies.size()));
+        List<PolicyMainItem> customItems = customPolicies.stream()
+                .map(this::convertToMainItem)  // 🔄 같은 변환 메서드 재사용
+                .collect(Collectors.toList());
+
+        // 3. 응답 구성
+        return PolicyMainResponse.builder()
+                .popularPolicies(popularItems)
+                .customPolicies(customItems)
+                .build();
+    }
+
+    /**
+     * Policy → PolicyMainItem 변환 (기존 convertToBoardItem 패턴 재사용)
+     */
+    private PolicyMainItem convertToMainItem(Policy policy) {
+        return PolicyMainItem.builder()
+                .policyName(policy.getName())
+                .supportSummary(extractSupportSummary(policy.getSupportContent()))  // 💡 기존 메서드 재사용!
+                .applicationDeadline(extractApplicationDeadline(policy.getApplicationPeriod()))  // 💡 기존 메서드 재사용!
+                .inquiryCount(policy.getInquiryCount())
+                .build();
     }
 
     /**
