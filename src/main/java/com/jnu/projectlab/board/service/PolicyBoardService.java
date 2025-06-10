@@ -119,7 +119,7 @@ public class PolicyBoardService {
      */
     private String extractApplicationDeadline(String applicationPeriod) {
         if (applicationPeriod == null || applicationPeriod.trim().isEmpty()) {
-            return "정보없음";
+            return "상시"; // 필드가 비어있을경우
         }
         
         try {
