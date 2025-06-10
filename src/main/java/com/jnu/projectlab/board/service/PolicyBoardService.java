@@ -142,7 +142,7 @@ public class PolicyBoardService {
             
         } catch (Exception e) {
             // 파싱 실패 시
-            return "정보없음";
+            return "상시";
         }
         
         return "정보없음";
