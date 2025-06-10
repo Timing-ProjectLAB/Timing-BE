@@ -25,7 +25,8 @@ public interface PolicyRepository extends JpaRepository<Policy, String> {
     List<Policy> findByPolicyIdInOrderByInquiryCountDesc(@Param("policyIds") List<String> policyIds);
 
     /**
-     * 조회수 기준 상위 3개 정책 조회 (인기정책용)
+     * 조회수 기준 상위 10개 정책 조회 (인기정책용)
      */
-    List<Policy> findTop3ByOrderByInquiryCountDesc();
+    // 전체 메서드 조회(Top 10)
+    List<Policy> findTop10ByOrderByInquiryCountDesc();
 }
