@@ -52,8 +52,10 @@ public class PolicyBoardService {
         // 2. 전체 정책 개수 조회 (API 명세서의 totalCount)
         long totalCount = policyRepository.count();
 
-        // 3. 전체 정책 데이터 조회
-        List<Policy> allPolicies = policyRepository.findAll();
+        // 3. 전체 정책 데이터 조회 + 마감일 필터링
+        List<Policy> allPolicies = policyRepository.findAll().stream()
+                .filter(this::isValidPolicy)
+                .collect(Collectors.toList());
 
         // 4. 각 정책을 게시판 아이템으로 변환
         List<PolicyBoardItem> boardItems = allPolicies.stream()
@@ -186,17 +188,23 @@ public class PolicyBoardService {
     public PolicyMainResponse getMainPagePolicies() {
 
         // 1. 인기정책 - Repository에서 Top 3 조회
-        List<Policy> popularPolicies = policyRepository.findTop3ByOrderByInquiryCountDesc();
+        List<Policy> popularPolicies = policyRepository.findTop10ByOrderByInquiryCountDesc()
+                .stream()
+                .filter(this::isValidPolicy)
+                .limit(3) // 10개중에 Top3 조회
+                .collect(Collectors.toList());
         List<PolicyMainItem> popularItems = popularPolicies.stream()
                 .map(this::convertToMainItem)  // 🔄 기존 패턴 재사용
                 .collect(Collectors.toList());
 
         // 2. 맞춤정책 - 기존 findAll() 재사용 + 랜덤 선택
-        List<Policy> allPolicies = policyRepository.findAll();  // 💡 기존 메서드 재사용!
-        Collections.shuffle(allPolicies);  // 랜덤 섞기
-        List<Policy> customPolicies = allPolicies.subList(0, Math.min(3, allPolicies.size()));
+        List<Policy> allValidPolicies = policyRepository.findAll().stream()
+                .filter(this::isValidPolicy)
+                .collect(Collectors.toList());
+        Collections.shuffle(allValidPolicies);  // 랜덤 섞기
+        List<Policy> customPolicies = allValidPolicies.subList(0, Math.min(3, allValidPolicies.size()));
         List<PolicyMainItem> customItems = customPolicies.stream()
-                .map(this::convertToMainItem)  // 🔄 같은 변환 메서드 재사용
+                .map(this::convertToMainItem)
                 .collect(Collectors.toList());
 
         // 3. 응답 구성
@@ -264,7 +272,10 @@ public class PolicyBoardService {
             }
             
             // 6. 인기순(조회수) 정렬로 정책 조회
-            List<Policy> policies = policyRepository.findByPolicyIdInOrderByInquiryCountDesc(policyIds);
+            List<Policy> policies = policyRepository.findByPolicyIdInOrderByInquiryCountDesc(policyIds)
+                    .stream()
+                    .filter(this::isValidPolicy)
+                    .collect(Collectors.toList());
             
             // 7. DTO 변환 및 응답 구성
             List<PolicyBoardItem> boardItems = policies.stream()
@@ -283,6 +294,36 @@ public class PolicyBoardService {
         } catch (Exception e) {
             log.error("카테고리 필터링 중 오류 발생", e);
             throw new RuntimeException("정책 조회 중 오류가 발생했습니다.", e);
+        }
+    }
+
+    /**
+     * 정책이 현재 신청 가능한지 확인 (마감일 체크 + 상시 포함)
+     */
+    private boolean isValidPolicy(Policy policy) {
+        String deadline = extractApplicationDeadline(policy.getApplicationPeriod());
+
+        // 상시 모집은 항상 포함
+        if ("상시".equals(deadline)) {
+            return true;
+        }
+
+        // 정보없음은 제외
+        if ("정보없음".equals(deadline)) {
+            return false;
+        }
+
+        try {
+            // yyyy.MM.dd 형식을 LocalDate로 변환
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd");
+            LocalDate deadlineDate = LocalDate.parse(deadline, formatter);
+            LocalDate today = LocalDate.now();
+
+            // 마감일이 오늘 이후면 포함 (오늘도 포함)
+            return !deadlineDate.isBefore(today);
+        } catch (Exception e) {
+            // 파싱 실패시 제외
+            return false;
         }
     }
 }
