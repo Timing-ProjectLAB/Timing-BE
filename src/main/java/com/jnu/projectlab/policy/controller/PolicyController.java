@@ -23,7 +23,7 @@ public class PolicyController {
     @PreAuthorize("isAuthenticated()")
     @GetMapping("/detail/{policy_id}")
     public ResponseEntity<?> getPolicyDetail(
-            @PathVariable String policyId,
+            @PathVariable("policy_id") String policyId,
             @AuthenticationPrincipal User user
     ) {
         try {
