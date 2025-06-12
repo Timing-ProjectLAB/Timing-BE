@@ -74,6 +74,7 @@ public class PolicyBoardService {
      */
     private PolicyBoardItem convertToBoardItem(Policy policy) {
         return PolicyBoardItem.builder()
+                .policyId(policy.getPolicyId()) // Add PolicyId
                 .policyName(policy.getName())  // 정책명: Policy.name 그대로 사용
                 .supportSummary(extractSupportSummary(policy.getSupportContent()))  // 보충내용: 첫 번째 항목만
                 .applicationDeadline(extractApplicationDeadline(policy.getApplicationPeriod()))  // 마감일자: 종료일만 추출
