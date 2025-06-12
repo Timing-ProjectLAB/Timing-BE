@@ -219,6 +219,7 @@ public class PolicyBoardService {
      */
     private PolicyMainItem convertToMainItem(Policy policy) {
         return PolicyMainItem.builder()
+                .policyId(policy.getPolicyId()) // Add Policy_id
                 .policyName(policy.getName())
                 .supportSummary(extractSupportSummary(policy.getSupportContent()))  // 💡 기존 메서드 재사용!
                 .applicationDeadline(extractApplicationDeadline(policy.getApplicationPeriod()))  // 💡 기존 메서드 재사용!
