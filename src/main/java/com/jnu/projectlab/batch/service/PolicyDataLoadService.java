@@ -68,7 +68,7 @@ public class PolicyDataLoadService {
             log.info("정책 데이터 적재 시작");
             String json = Files.readString(Paths.get("data/all_policy_data.json"));
             List<PolicyDataDto> policyList = objectMapper.readValue(json, new TypeReference<List<PolicyDataDto>>() {});
-            List<PolicyDataDto> sample = policyList.subList(0, Math.min(10, policyList.size()));
+            List<PolicyDataDto> sample = policyList.subList(800, Math.min(1000, policyList.size()));
             policyList = sample; // 원본을 샘플로 교체
             log.info("JSON 파일 읽기 완료. 총 {}건의 정책 데이터 (테스트용 10건만 처리)", policyList.size()); // 우선적으로 1000개의 데이터만
 
@@ -76,6 +76,17 @@ public class PolicyDataLoadService {
             int processedCount = 0;
             for (PolicyDataDto dto : policyList) {
                 try {
+
+                    // 1. 대분류 필터링
+                    List<String> allowedLclsf = List.of("일자리", "주거", "교육", "복지문화", "참여권리");
+                    if (!allowedLclsf.contains(dto.getLclsfNm())) {
+                        continue; // 대분류가 아니면 skip
+                    }
+                    // 2. 신청 URL 필터링
+                    if (dto.getAplyUrlAddr() == null || dto.getAplyUrlAddr().trim().isEmpty()) {
+                        continue; // URL이 없으면 skip
+                    }
+
                     // 2-1. 마스터 데이터 저장 (카테고리, 기관)
                     CategoryGroup categoryGroup = saveCategoryGroupIfNotExists(dto);
                     Category category = saveCategoryIfNotExists(dto, categoryGroup);
