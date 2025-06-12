@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class PolicyMainItem {
-    private String policyId; // Add Policy_id
+    private String policy_id; // Add Policy_id
     private String policyName;           // 정책명
     private String supportSummary;       // 지원내용 요약
     private String applicationDeadline;  // 신청 마감일

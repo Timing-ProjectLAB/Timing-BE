@@ -233,7 +233,7 @@ public class PolicyBoardService {
      */
     private PolicyMainItem convertToMainItem(Policy policy) {
         return PolicyMainItem.builder()
-                .policyId(policy.getPolicyId()) // Add Policy_id
+                .policy_id(policy.getPolicyId()) // Add Policy_id
                 .policyName(policy.getName())
                 .supportSummary(
                         removeSpecialPrefix(extractSupportSummary(policy.getSupportContent()))
