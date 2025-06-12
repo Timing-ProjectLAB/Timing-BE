@@ -102,7 +102,7 @@ public class PolicyService {
 
     private String formatApplicationPeriod(String aplyYmd) {
         if (aplyYmd == null || aplyYmd.trim().isEmpty()) {
-            return "";
+            return "상시";
         }
 
         String[] dates = aplyYmd.split(" ~ ");
