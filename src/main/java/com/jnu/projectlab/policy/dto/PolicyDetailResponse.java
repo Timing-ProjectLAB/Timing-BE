@@ -11,7 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class PolicyDetailResponse {
-    private String policyId;           // 정책번호
+    private String policy_id;           // 정책번호
     private String plcyKywdNm;         // 키워드
     private String policyName;         // 정책명
     private String policyDescription;  // 정책설명

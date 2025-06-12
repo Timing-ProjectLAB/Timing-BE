@@ -90,7 +90,7 @@ public class PolicyService {
 
         // 10. PolicyDetailResponse 생성 및 반환
         return PolicyDetailResponse.builder()
-                .policyId(policy.getPolicyId())
+                .policy_id(policy.getPolicyId())
                 .plcyKywdNm(keywords.isEmpty() ? null : keywords)
                 .policyName(policy.getName())
                 .policyDescription(policy.getDescription())
