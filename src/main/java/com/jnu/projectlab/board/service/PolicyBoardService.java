@@ -59,7 +59,10 @@ public class PolicyBoardService {
 
         // 4. 각 정책을 게시판 아이템으로 변환
         List<PolicyBoardItem> boardItems = allPolicies.stream()
+                .filter(this::isValidPolicy)
+                .filter(policy -> policy.getApplicationUrl() != null && !policy.getApplicationUrl().trim().isEmpty())
                 .map(this::convertToBoardItem)  // 개별 정책 → 게시판 아이템 변환
+                .limit(20)
                 .collect(Collectors.toList());
 
         // 5. 최종 응답 데이터 구성
@@ -205,6 +208,7 @@ public class PolicyBoardService {
         List<Policy> popularPolicies = policyRepository.findTop10ByOrderByInquiryCountDesc()
                 .stream()
                 .filter(this::isValidPolicy)
+                .filter(policy -> policy.getApplicationUrl() != null && !policy.getApplicationUrl().trim().isEmpty())
                 .limit(3) // 10개중에 Top3 조회
                 .collect(Collectors.toList());
         List<PolicyMainItem> popularItems = popularPolicies.stream()
@@ -296,7 +300,9 @@ public class PolicyBoardService {
             
             // 7. DTO 변환 및 응답 구성
             List<PolicyBoardItem> boardItems = policies.stream()
+                    .filter(policy -> policy.getApplicationUrl() != null && !policy.getApplicationUrl().trim().isEmpty())
                     .map(this::convertToBoardItem)
+                    .limit(20)
                     .collect(Collectors.toList());
             
             return PolicyBoardResponse.builder()
