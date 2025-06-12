@@ -21,7 +21,7 @@ public class PolicyController {
     }
 
     @PreAuthorize("isAuthenticated()")
-    @GetMapping("/detail/{policyId}")
+    @GetMapping("/detail/{policy_id}")
     public ResponseEntity<?> getPolicyDetail(
             @PathVariable String policyId,
             @AuthenticationPrincipal User user
