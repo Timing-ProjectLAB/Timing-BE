@@ -130,10 +130,7 @@ public class PolicyService {
         return Arrays.stream(additionalCondition.split("\\n"))  // 1. 줄바꿈으로 분리
                 .map(line -> line.trim())                        // 2. 양쪽 공백 제거
                 .filter(line -> !line.isEmpty())                 // 3. 빈 줄 제외
-                .map(line -> {
-                    // 4. 앞의 구분자들 제거 (-, •, ※, 공백 등)
-                    return line.replaceAll("^[\\s\\-•※]*", "").trim();
-                })
+                .map(this::removeSpecialPrefix)
                 .filter(line -> !line.isEmpty() && line.length() > 3) // 5. 너무 짧은 텍스트 제외
                 .collect(Collectors.toList());
     }
@@ -147,13 +144,15 @@ public class PolicyService {
         return Arrays.stream(supportContent.split("\\n"))       // 1. 줄바꿈으로 분리
                 .map(line -> line.trim())                        // 2. 양쪽 공백 제거
                 .filter(line -> !line.isEmpty())                 // 3. 빈 줄 제외
-                .map(line -> {
-                    // 4. 구분자와 라벨 제거
-                    line = line.replaceAll("^[\\s\\-•※]*", "");         // 앞의 구분자 제거
-                    line = line.replaceAll("^지원[가-힣]*\\s*:\\s*", "");  // "지원대상:", "지원내용:" 등 제거
-                    return line.trim();
-                })
+                .map(this::removeSpecialPrefix) // ← 여기서 특수문자 제거
+                .map(line -> line.replaceAll("^지원[가-힣]*\\s*:\\s*", ""))
                 .filter(line -> !line.isEmpty() && line.length() > 3)   // 5. 너무 짧은 텍스트 제외
                 .collect(Collectors.toList());
+    }
+
+    public String removeSpecialPrefix(String text) {
+        if (text == null) return null;
+        // 문장 맨 앞의 특수문자, 숫자, 기호, 공백 등 제거
+        return text.replaceAll("^[\\s\\-•※▴*①②③④⑤⑥⑦⑧⑨⑩ㅇ□○]+", "");
     }
 }
