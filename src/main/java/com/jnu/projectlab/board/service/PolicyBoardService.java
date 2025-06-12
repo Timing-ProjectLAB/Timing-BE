@@ -79,7 +79,7 @@ public class PolicyBoardService {
      */
     private PolicyBoardItem convertToBoardItem(Policy policy) {
         return PolicyBoardItem.builder()
-                .policyId(policy.getPolicyId()) // Add PolicyId
+                .policy_id(policy.getPolicyId()) // Add PolicyId
                 .policyName(policy.getName())  // 정책명: Policy.name 그대로 사용
                 .supportSummary(
                     removeSpecialPrefix(extractSupportSummary(policy.getSupportContent()))
