@@ -11,7 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class PolicyBoardItem {
-    private String policyId; // Add Policy_id
+    private String policy_id; // Add Policy_id
     private String policyName;
     private String supportSummary;
     private String applicationDeadline;
