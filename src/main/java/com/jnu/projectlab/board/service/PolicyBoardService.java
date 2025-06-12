@@ -62,7 +62,6 @@ public class PolicyBoardService {
                 .filter(this::isValidPolicy)
                 .filter(policy -> policy.getApplicationUrl() != null && !policy.getApplicationUrl().trim().isEmpty())
                 .map(this::convertToBoardItem)  // 개별 정책 → 게시판 아이템 변환
-                .limit(20)
                 .collect(Collectors.toList());
 
         // 5. 최종 응답 데이터 구성
