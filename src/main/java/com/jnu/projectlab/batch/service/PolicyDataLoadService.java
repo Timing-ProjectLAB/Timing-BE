@@ -27,6 +27,7 @@ import com.jnu.projectlab.category.service.CategoryService;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -41,15 +42,15 @@ public class PolicyDataLoadService {
     private final PolicyConditionRepository policyConditionRepository;
     private final PolicyMetaRepository policyMetaRepository;
     private final PolicyCategoryRepository policyCategoryRepository;
-    
+
     // 연관 매핑 관련
     private final PolicyKeywordRepository policyKeywordRepository;
     private final PolicyZipcodeRepository policyZipcodeRepository;
     private final PolicyOrganizationRepository policyOrganizationRepository;
-    
+
     // 마스터 데이터 관련
     private final OrganizationRepository organizationRepository;
-    
+
     // 기타
     private final ObjectMapper objectMapper;
 
@@ -57,69 +58,77 @@ public class PolicyDataLoadService {
     private final CategoryGroupService categoryGroupService;
     private final CategoryService categoryService;
 
+    // ============== 배치 처리용 리스트 ==============
+    private List<Policy> batchPolicies;
+    private List<PolicyCondition> batchConditions;
+    private List<PolicyMeta> batchMetas;
+    private List<PolicyCategory> batchPolicyCategories;
+    private List<Organization> batchOrganizations;
+    private List<PolicyKeyword> batchPolicyKeywords;
+    private List<PolicyZipcode> batchPolicyZipcodes;
+    private List<PolicyOrganization> batchPolicyOrganizations;
+
+    private void initializeBatchLists() {
+        batchPolicies = new ArrayList<>();
+        batchConditions = new ArrayList<>();
+        batchMetas = new ArrayList<>();
+        batchPolicyCategories = new ArrayList<>();
+        batchOrganizations = new ArrayList<>();
+        batchPolicyKeywords = new ArrayList<>();
+        batchPolicyZipcodes = new ArrayList<>();
+        batchPolicyOrganizations = new ArrayList<>();
+    }
+
     /**
      * 정책 데이터 전체 적재 메인 메서드
      * ERD의 모든 테이블에 데이터를 저장합니다.
      */
-    @Transactional // 현재 효율성의 문제가 발생 무려 9시간.. 왜냐하면 혼자서 데이터를 다 적재하려고 하기 때문
+    @Transactional
     public void loadPolicyData() {
         try {
-            // 1. JSON 파일 읽기
-            log.info("정책 데이터 적재 시작");
             String json = Files.readString(Paths.get("data/all_policy_data.json"));
             List<PolicyDataDto> policyList = objectMapper.readValue(json, new TypeReference<List<PolicyDataDto>>() {});
-            List<PolicyDataDto> sample = policyList.subList(800, Math.min(1000, policyList.size()));
-            policyList = sample; // 원본을 샘플로 교체
-            log.info("JSON 파일 읽기 완료. 총 {}건의 정책 데이터 (테스트용 10건만 처리)", policyList.size()); // 우선적으로 1000개의 데이터만
+            int batchSize = 100;
 
-            // 2. 각 정책별로 데이터 처리
-            int processedCount = 0;
-            for (PolicyDataDto dto : policyList) {
-                try {
+            for (int i = 0; i < policyList.size(); i += batchSize) {
+                initializeBatchLists();
+                
+                int endIndex = Math.min(i + batchSize, policyList.size());
+                List<PolicyDataDto> batch = policyList.subList(i, endIndex);
 
-                    // 1. 대분류 필터링
-                    List<String> allowedLclsf = List.of("일자리", "주거", "교육", "복지문화", "참여권리");
-                    if (!allowedLclsf.contains(dto.getLclsfNm())) {
-                        continue; // 대분류가 아니면 skip
-                    }
-                    // 2. 신청 URL 필터링
-                    if (dto.getAplyUrlAddr() == null || dto.getAplyUrlAddr().trim().isEmpty()) {
-                        continue; // URL이 없으면 skip
-                    }
-
-                    // 2-1. 마스터 데이터 저장 (카테고리, 기관)
+                for (PolicyDataDto dto : batch) {
+                    // 기존 저장 로직 그대로 사용
                     CategoryGroup categoryGroup = saveCategoryGroupIfNotExists(dto);
                     Category category = saveCategoryIfNotExists(dto, categoryGroup);
                     List<Organization> organizations = saveOrganizationsIfNotExists(dto);
 
-                    // 2-2. 정책 기본 정보 저장
-                    Policy policy = savePolicy(dto);
+                    // 객체 생성 (저장 안 함)
+                    Policy policy = buildPolicy(dto);
+                    PolicyCondition condition = buildPolicyCondition(dto, policy);
+                    PolicyMeta meta = buildPolicyMeta(dto, policy);
+                    PolicyCategory policyCategory = buildPolicyCategory(policy, category);
 
-                    // 2-3. 정책 조건/메타 정보 저장
-                    savePolicyCondition(dto, policy);
-                    savePolicyMeta(dto, policy);
-
-                    // 2-4. 정책 연관 매핑 데이터 저장
-                    savePolicyCategory(policy, category);
-                    savePolicyKeywords(dto, policy);
-                    savePolicyZipcodes(dto, policy);
-                    savePolicyOrganizations(policy, organizations, dto);
-
-                    processedCount++;
-                    if (processedCount % 100 == 0) {
-                        log.info("정책 데이터 처리 진행률: {}/{}", processedCount, policyList.size());
+                    // 배치 리스트에 추가
+                    batchPolicies.add(policy);
+                    batchConditions.add(condition);
+                    batchMetas.add(meta);
+                    if (policyCategory != null) {
+                        batchPolicyCategories.add(policyCategory);
                     }
 
-                } catch (Exception e) {
-                    log.error("정책 데이터 처리 중 오류 발생: 정책번호={}, 오류={}", dto.getPlcyNo(), e.getMessage(), e);
-                    // 개별 정책 오류 시에도 전체 작업은 계속 진행
+                    // 1:N 관계도 배치 처리로 변경
+                    buildPolicyKeywords(dto, policy);
+                    buildPolicyZipcodes(dto, policy);
+                    buildPolicyOrganizations(policy, organizations, dto);
                 }
+                
+                // 배치 저장
+                saveAllBatches();
+                
+                log.info("배치 처리 진행률: {}/{}", endIndex, policyList.size());
             }
-
-            log.info("정책 데이터 적재 완료! 총 {}건 처리 완료", processedCount);
-
         } catch (Exception e) {
-            log.error("정책 데이터 적재 중 전체 오류 발생", e);
+            log.error("정책 데이터 적재 중 오류 발생", e);
             throw new RuntimeException("정책 데이터 적재 실패: " + e.getMessage(), e);
         }
     }
@@ -148,66 +157,59 @@ public class PolicyDataLoadService {
         List<Organization> organizations = new java.util.ArrayList<>();
 
         // 감독 기관
-        if (StringUtils.hasText(dto.getSprvsnInstCd())) {
-            Organization org = saveOrganizationIfNotExists(
-                dto.getSprvsnInstCd(), 
-                dto.getSprvsnInstCdNm(), 
-                dto.getSprvsnInstPicNm()
-            );
-            if (org != null) organizations.add(org);
+        String orgId = dto.getSprvsnInstCd();
+        if (orgId == null || orgId.trim().isEmpty()) {
+            orgId = "UNKNOWN_SUPERVISOR"; // 기본값
         }
+        Organization org = buildOrganizationIfNotExists(orgId, dto.getSprvsnInstCdNm(), dto.getSprvsnInstPicNm());
+        if (org != null) organizations.add(org);
 
         // 운영 기관
-        if (StringUtils.hasText(dto.getOperInstCd())) {
-            Organization org = saveOrganizationIfNotExists(
-                dto.getOperInstCd(), 
-                dto.getOperInstCdNm(), 
-                dto.getOperInstPicNm()
-            );
-            if (org != null) organizations.add(org);
+        String operOrgId = dto.getOperInstCd();
+        if (operOrgId == null || operOrgId.trim().isEmpty()) {
+            operOrgId = "UNKNOWN_OPERATOR"; // 기본값
         }
+        Organization operOrg = buildOrganizationIfNotExists(operOrgId, dto.getOperInstCdNm(), dto.getOperInstPicNm());
+        if (operOrg != null) organizations.add(operOrg);
 
         // 등록 기관
-        if (StringUtils.hasText(dto.getRgtrInstCd())) {
-            Organization org = saveOrganizationIfNotExists(
-                dto.getRgtrInstCd(), 
-                dto.getRgtrInstCdNm(), 
-                null // 등록기관 담당자명은 DTO에 없음
-            );
-            if (org != null) organizations.add(org);
+        String rgtrOrgId = dto.getRgtrInstCd();
+        if (rgtrOrgId == null || rgtrOrgId.trim().isEmpty()) {
+            rgtrOrgId = "UNKNOWN_REGISTRAR"; // 기본값
         }
+        Organization rgtrOrg = buildOrganizationIfNotExists(rgtrOrgId, dto.getRgtrInstCdNm(), null);
+        if (rgtrOrg != null) organizations.add(rgtrOrg);
 
         return organizations;
     }
 
     /**
-     * 개별 기관 저장 (중복 체크 포함)
+     * 기관 객체 생성 (배치 저장용)
      */
-    private Organization saveOrganizationIfNotExists(String orgId, String orgName, String contactName) {
-        if (!StringUtils.hasText(orgId)) {
-            return null;
-        }
-
+    private Organization buildOrganizationIfNotExists(String orgId, String orgName, String contactName) {
         // PK(organization_id)로 중복 체크
         Optional<Organization> existingOrg = organizationRepository.findById(orgId);
         if (existingOrg.isPresent()) {
             return existingOrg.get();
         }
 
-        // 새로운 기관 생성 및 저장
+        // 새로운 기관 생성 (저장하지 않음)
         Organization newOrg = Organization.builder()
                 .organizationId(orgId)
                 .name(orgName)
                 .contactName(contactName)
                 .build();
-        return organizationRepository.save(newOrg);
+        
+        // 배치 리스트에 추가
+        batchOrganizations.add(newOrg);
+        return newOrg;
     }
 
     /**
-     * 4. 정책 기본 정보 저장
-     * JSON의 정책 기본 필드들 → policy 테이블
+     * 4. 정책 기본 정보 생성 (저장하지 않음)
+     * JSON의 정책 기본 필드들 → policy 객체 생성
      */
-    private Policy savePolicy(PolicyDataDto dto) {
+    private Policy buildPolicy(PolicyDataDto dto) {
         Policy policy = Policy.builder()
                 .policyId(dto.getPlcyNo())
                 .name(dto.getPlcyNm())
@@ -233,14 +235,14 @@ public class PolicyDataLoadService {
                 .operInstCd(dto.getOperInstCd())
                 .build();
 
-        return policyRepository.save(policy);
+        return policy; // 저장하지 않고 객체만 반환
     }
 
     /**
      * 5. 정책 조건 저장
      * JSON의 조건 필드들 → policy_condition 테이블
      */
-    private void savePolicyCondition(PolicyDataDto dto, Policy policy) {
+    private PolicyCondition buildPolicyCondition(PolicyDataDto dto, Policy policy) {
         PolicyCondition condition = PolicyCondition.builder()
                 .policyId(policy.getPolicyId())
                 .minAge(dto.getSprtTrgtMinAge())
@@ -259,14 +261,14 @@ public class PolicyDataLoadService {
                 .participantTarget(dto.getPtcpPrpTrgtCn())
                 .build();
 
-        policyConditionRepository.save(condition);
+        return condition;
     }
 
     /**
      * 6. 정책 메타 정보 저장
      * JSON의 메타 필드들 → policy_meta 테이블
      */
-    private void savePolicyMeta(PolicyDataDto dto, Policy policy) {
+    private PolicyMeta buildPolicyMeta(PolicyDataDto dto, Policy policy) {
         PolicyMeta meta = PolicyMeta.builder()
                 .policyId(policy.getPolicyId())
                 .planCycle(dto.getBscPlanCycl())
@@ -280,16 +282,17 @@ public class PolicyDataLoadService {
                 .businessPeriodCd(dto.getBizPrdSeCd())
                 .build();
 
-        policyMetaRepository.save(meta);
+        return meta;
     }
 
     /**
      * 7. 정책-카테고리 매핑 저장
      * policy ↔ category 다대다 관계 → policy_category 테이블
      */
-    private void savePolicyCategory(Policy policy, Category category) {
+    private PolicyCategory buildPolicyCategory(Policy policy, Category category) {
         if (category == null) {
-            return;
+            CategoryGroup defaultGroup = categoryGroupService.findOrCreateByName("기타");
+            category = categoryService.findOrCreateByNameAndGroup("일반정책", defaultGroup);
         }
 
         // 중복 체크: 같은 정책-카테고리 조합이 이미 있는지 확인
@@ -297,7 +300,7 @@ public class PolicyDataLoadService {
                 .findByPolicyIdAndCategoryId(policy.getPolicyId(), category.getId());
         
         if (existing.isPresent()) {
-            return; // 이미 있으면 스킵
+            return existing.get();
         }
 
         PolicyCategory policyCategory = PolicyCategory.builder()
@@ -305,92 +308,71 @@ public class PolicyDataLoadService {
                 .categoryId(category.getId())
                 .build();
 
-        policyCategoryRepository.save(policyCategory);
+        return policyCategory;
     }
 
     /**
-     * 8. 정책 키워드 저장
-     * JSON의 plcyKywdNm(쉼표 분리) → policy_keyword 테이블
+     * 8. 정책 키워드 생성 (배치 저장용)
+     * JSON의 plcyKywdNm(쉼표 분리) → policy_keyword 객체 생성
      */
-    private void savePolicyKeywords(PolicyDataDto dto, Policy policy) {
-        if (!StringUtils.hasText(dto.getPlcyKywdNm())) {
-            return;
+    private void buildPolicyKeywords(PolicyDataDto dto, Policy policy) {
+        String keywordStr = dto.getPlcyKywdNm();
+        if (keywordStr == null || keywordStr.trim().isEmpty()) {
+            keywordStr = "일반정책"; // 기본 키워드
         }
 
-        // 쉼표로 분리해서 각각 저장
-        String[] keywords = dto.getPlcyKywdNm().split(",");
+        // 쉼표로 분리해서 각각 생성
+        String[] keywords = keywordStr.split(",");
         for (String keyword : keywords) {
             String trimmedKeyword = keyword.trim();
-            if (StringUtils.hasText(trimmedKeyword)) {
-                // 중복 체크: 같은 정책에 같은 키워드가 이미 있는지 확인
-                Optional<PolicyKeyword> existing = policyKeywordRepository
-                        .findByPolicyIdAndKeyword(policy.getPolicyId(), trimmedKeyword);
-                
-                if (existing.isEmpty()) { // 중복되지 않은 경우만 저장
-                    PolicyKeyword policyKeyword = PolicyKeyword.builder()
-                            .policyId(policy.getPolicyId())
-                            .keyword(trimmedKeyword)
-                            .build();
-                    policyKeywordRepository.save(policyKeyword);
-                }
-            }
+            // 모든 키워드 생성 (중복 체크는 배치 저장 시 DB에서 처리)
+            PolicyKeyword policyKeyword = PolicyKeyword.builder()
+                    .policyId(policy.getPolicyId())
+                    .keyword(trimmedKeyword)
+                    .build();
+            batchPolicyKeywords.add(policyKeyword);
         }
     }
 
     /**
-     * 9. 정책 지원 지역(우편번호) 저장
-     * JSON의 zipCd(쉼표 분리) → policy_zipcode 테이블
+     * 9. 정책 지원 지역(우편번호) 생성 (배치 저장용)
+     * JSON의 zipCd(쉼표 분리) → policy_zipcode 객체 생성
      */
-    private void savePolicyZipcodes(PolicyDataDto dto, Policy policy) {
-        if (!StringUtils.hasText(dto.getZipCd())) {
-            return;
+    private void buildPolicyZipcodes(PolicyDataDto dto, Policy policy) {
+        String zipcodeStr = dto.getZipCd();
+        if (zipcodeStr == null || zipcodeStr.trim().isEmpty()) {
+            zipcodeStr = "00000"; // 전국 대상 의미
         }
 
-        // 쉼표로 분리해서 각각 저장
-        String[] zipcodes = dto.getZipCd().split(",");
+        // 쉼표로 분리해서 각각 생성
+        String[] zipcodes = zipcodeStr.split(",");
         for (String zipcode : zipcodes) {
             String trimmedZipcode = zipcode.trim();
-            if (StringUtils.hasText(trimmedZipcode)) {
-                // 중복 체크: 같은 정책에 같은 우편번호가 이미 있는지 확인
-                Optional<PolicyZipcode> existing = policyZipcodeRepository
-                        .findByPolicyIdAndZipcode(policy.getPolicyId(), trimmedZipcode);
-                
-                if (existing.isEmpty()) { // 중복되지 않은 경우만 저장
-                    PolicyZipcode policyZipcode = PolicyZipcode.builder()
-                            .policyId(policy.getPolicyId())
-                            .zipcode(trimmedZipcode)
-                            .build();
-                    policyZipcodeRepository.save(policyZipcode);
-                }
-            }
+            // 모든 우편번호 생성 (중복 체크는 배치 저장 시 DB에서 처리)
+            PolicyZipcode policyZipcode = PolicyZipcode.builder()
+                    .policyId(policy.getPolicyId())
+                    .zipcode(trimmedZipcode)
+                    .build();
+            batchPolicyZipcodes.add(policyZipcode);
         }
     }
 
     /**
-     * 10. 정책-기관 매핑 저장
-     * policy ↔ organization 관계 → policy_organization 테이블
+     * 10. 정책-기관 매핑 생성 (배치 저장용)
+     * policy ↔ organization 관계 → policy_organization 객체 생성
      */
-    private void savePolicyOrganizations(Policy policy, List<Organization> organizations, PolicyDataDto dto) {
+    private void buildPolicyOrganizations(Policy policy, List<Organization> organizations, PolicyDataDto dto) {
         for (Organization org : organizations) {
             // 기관별 역할 결정
             String role = determineOrganizationRole(org.getOrganizationId(), dto);
             
-            // 중복 체크
-            Optional<PolicyOrganization> existing = policyOrganizationRepository
-                    .findByPolicyIdAndOrganizationIdAndRole(
-                        policy.getPolicyId(), 
-                        org.getOrganizationId(), 
-                        role
-                    );
-            
-            if (existing.isEmpty()) {
-                PolicyOrganization policyOrg = PolicyOrganization.builder()
-                        .policyId(policy.getPolicyId())
-                        .organizationId(org.getOrganizationId())
-                        .role(role)
-                        .build();
-                policyOrganizationRepository.save(policyOrg);
-            }
+            // 중복 체크 없이 객체 생성 (배치 저장 시 DB에서 처리)
+            PolicyOrganization policyOrg = PolicyOrganization.builder()
+                    .policyId(policy.getPolicyId())
+                    .organizationId(org.getOrganizationId())
+                    .role(role)
+                    .build();
+            batchPolicyOrganizations.add(policyOrg);
         }
     }
 
@@ -406,5 +388,38 @@ public class PolicyDataLoadService {
             return "registering"; // 등록 기관
         }
         return "unknown"; // 알 수 없는 역할
+    }
+
+    /**
+     * 배치로 모은 데이터들을 한 번에 저장
+     */
+    private void saveAllBatches() {
+        // 기존 배치들
+        if (!batchPolicies.isEmpty()) {
+            policyRepository.saveAll(batchPolicies);
+        }
+        if (!batchConditions.isEmpty()) {
+            policyConditionRepository.saveAll(batchConditions);
+        }
+        if (!batchMetas.isEmpty()) {
+            policyMetaRepository.saveAll(batchMetas);
+        }
+        if (!batchPolicyCategories.isEmpty()) {
+            policyCategoryRepository.saveAll(batchPolicyCategories);
+        }
+        
+        // 새로 추가된 배치들
+        if (!batchOrganizations.isEmpty()) {
+            organizationRepository.saveAll(batchOrganizations);
+        }
+        if (!batchPolicyKeywords.isEmpty()) {
+            policyKeywordRepository.saveAll(batchPolicyKeywords);
+        }
+        if (!batchPolicyZipcodes.isEmpty()) {
+            policyZipcodeRepository.saveAll(batchPolicyZipcodes);
+        }
+        if (!batchPolicyOrganizations.isEmpty()) {
+            policyOrganizationRepository.saveAll(batchPolicyOrganizations);
+        }
     }
 } 
