@@ -86,7 +86,7 @@ public class PolicyDataLoadService {
     @Transactional
     public void loadPolicyData() {
         try {
-            String json = Files.readString(Paths.get("data/all_policy_data.json"));
+            String json = Files.readString(Paths.get("data/final_policy_filtered.json"));
             List<PolicyDataDto> policyList = objectMapper.readValue(json, new TypeReference<List<PolicyDataDto>>() {});
             int batchSize = 100;
 
