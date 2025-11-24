@@ -9,6 +9,7 @@ import com.jnu.projectlab.policy.entity.PolicyMeta;
 import com.jnu.projectlab.policy.repository.PolicyRepository;
 import com.jnu.projectlab.policy.repository.PolicyConditionRepository;
 import com.jnu.projectlab.policy.repository.PolicyMetaRepository;
+import com.jnu.projectlab.policyview.service.UserPolicyViewService;
 import com.jnu.projectlab.organization.entity.Organization;
 import com.jnu.projectlab.organization.repository.OrganizationRepository;
 import com.jnu.projectlab.common.repository.PolicyKeywordRepository;
@@ -29,6 +30,7 @@ public class PolicyService {
     private final PolicyMetaRepository policyMetaRepository;
     private final PolicyKeywordRepository policyKeywordRepository;
     private final PolicyConditionRepository policyConditionRepository;
+    private final UserPolicyViewService userPolicyViewService;
 
     @Autowired
     public PolicyService(
@@ -36,59 +38,67 @@ public class PolicyService {
             OrganizationRepository organizationRepository,
             PolicyMetaRepository policyMetaRepository,
             PolicyKeywordRepository policyKeywordRepository,
-            PolicyConditionRepository policyConditionRepository) {
+            PolicyConditionRepository policyConditionRepository,
+            UserPolicyViewService userPolicyViewService) {
         this.policyRepository = policyRepository;
         this.organizationRepository = organizationRepository;
         this.policyMetaRepository = policyMetaRepository;
         this.policyKeywordRepository = policyKeywordRepository;
         this.policyConditionRepository = policyConditionRepository;
+        this.userPolicyViewService = userPolicyViewService;
     }
 
-    @Transactional(readOnly = true)
-    public PolicyDetailResponse getPolicyDetail(String policyId) {
+    @Transactional
+    public PolicyDetailResponse getPolicyDetail(String policyId, String userId) {
         // 1. Policy 조회
         Policy policy = policyRepository.findByPolicyId(policyId);
         if (policy == null) {
             throw new RuntimeException("정책을 찾을 수 없습니다.");
         }
 
-        // ✅ 2. Organization 조회 (null 허용)
+        // 2. 조회수 증가 처리 (24시간 내 중복 조회 방지)
+        userPolicyViewService.incrementViewCountIfNeeded(policyId, userId);
+
+        // 3. 조회수 증가 후 최신 Policy 정보 다시 조회 (조회수 반영)
+        policy = policyRepository.findByPolicyId(policyId);
+
+        // ✅ 4. Organization 조회 (null 허용)
         Organization organization = null;
         if (policy.getOperInstCd() != null) {
             organization = organizationRepository.findByOrganizationId(policy.getOperInstCd());
         }
 
-        // ✅ 3. PolicyMeta 조회 (null 허용)
+        // ✅ 5. PolicyMeta 조회 (null 허용)
         PolicyMeta policyMeta = policyMetaRepository.findByPolicyId(policyId);
 
-        // ✅ 4. PolicyCondition 조회 (null 허용)
+        // ✅ 6. PolicyCondition 조회 (null 허용)
         PolicyCondition policyCondition = policyConditionRepository.findByPolicyId(policyId);
 
-        // 5. PolicyKeyword 조회
+        // 7. PolicyKeyword 조회
         List<PolicyKeyword> policyKeywords = policyKeywordRepository.findByPolicyId(policyId);
         String keywords = policyKeywords.stream()
                 .map(PolicyKeyword::getKeyword)
                 .collect(Collectors.joining(","));
 
-        // 6. 날짜 형식 변환
+        // 8. 날짜 형식 변환
         String formattedDate = formatApplicationPeriod(policy.getApplicationPeriod());
 
-        // ✅ 7. PolicySummary 생성 (null 안전)
+        // ✅ 9. PolicySummary 생성 (null 안전)
         PolicySummary policySummary = PolicySummary.builder()
                 .operatingAgency(organization != null ? organization.getName() : "정보 없음")
                 .applicationPeriod(formattedDate)
                 .applicationUrl(policy.getApplicationUrl())
                 .build();
 
-        // ✅ 8. 지원대상 파싱 (null 안전)
+        // ✅ 10. 지원대상 파싱 (null 안전)
         List<String> targetAudience = parseTargetAudience(
             policyCondition != null ? policyCondition.getAdditionalCondition() : null
         );
 
-        // ✅ 9. 지원내용 파싱 (null 안전)
+        // ✅ 11. 지원내용 파싱 (null 안전)
         List<String> supportContent = parseSupportContent(policy.getSupportContent());
 
-        // 10. PolicyDetailResponse 생성 및 반환
+        // 12. PolicyDetailResponse 생성 및 반환 (조회수 포함)
         return PolicyDetailResponse.builder()
                 .policy_id(policy.getPolicyId())
                 .plcyKywdNm(keywords.isEmpty() ? null : keywords)
@@ -97,6 +107,7 @@ public class PolicyService {
                 .policySummary(policySummary)
                 .targetAudience(targetAudience.isEmpty() ? List.of() : targetAudience)
                 .supportContent(supportContent.isEmpty() ? List.of() : supportContent)
+                .inquiryCount(policy.getInquiryCount())  // 조회수 포함
                 .build();
     }
 

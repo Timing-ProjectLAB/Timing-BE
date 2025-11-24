@@ -27,7 +27,7 @@ public class PolicyController {
             @AuthenticationPrincipal User user
     ) {
         try {
-            PolicyDetailResponse response = policyService.getPolicyDetail(policyId);
+            PolicyDetailResponse response = policyService.getPolicyDetail(policyId, user.getUserId());
             return ResponseEntity.ok(response);
         } catch (RuntimeException e) {
             if (e.getMessage().contains("찾을 수 없습니다")) {

@@ -18,4 +18,5 @@ public class PolicyDetailResponse {
     private PolicySummary policySummary;  // 정책요약
     private List<String> targetAudience;  // 지원대상
     private List<String> supportContent;  // 지원내용
+    private Integer inquiryCount;      // 조회수
 }

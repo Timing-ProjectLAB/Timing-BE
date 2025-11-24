@@ -113,4 +113,15 @@ public class Policy {
 
     @Column(name = "oper_inst_cd")
     private String operInstCd; // 운영기관코드 (Organization의 PK와 매핑되는 외래키 역할)
+
+    /**
+     * 조회수 증가 메서드
+     * 정책 상세 페이지를 조회할 때마다 호출됩니다.
+     */
+    public void incrementInquiryCount() {
+        if (this.inquiryCount == null) {
+            this.inquiryCount = 0;
+        }
+        this.inquiryCount++;
+    }
 }
