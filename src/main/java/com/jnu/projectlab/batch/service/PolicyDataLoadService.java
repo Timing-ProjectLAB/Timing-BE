@@ -40,7 +40,7 @@ public class PolicyDataLoadService {
     // 정책 관련
     private final PolicyRepository policyRepository;
     private final PolicyConditionRepository policyConditionRepository;
-    private final PolicyMetaRepository policyMetaRepository;
+    private final PolicyMetaRepository policyMetaRepository;    
     private final PolicyCategoryRepository policyCategoryRepository;
 
     // 연관 매핑 관련
